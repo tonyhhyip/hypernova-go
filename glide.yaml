@@ -1,2 +1,4 @@
 package: github.com/tonyhhyip/hypernova-go
-import: []
+import:
+- package: github.com/satori/go.uuid
+  version: ^1.2.0
