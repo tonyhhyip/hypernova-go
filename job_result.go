@@ -2,6 +2,8 @@ package hypernova
 
 import "time"
 
+type JobResults map[string]*JobResult
+
 type JobResult struct {
 	HTML        string            `json:"html"`
 	Err         error             `json:"error"`

@@ -2,10 +2,10 @@ package hypernova
 
 type Plugin interface {
 	GetViewData(name string, data map[string]interface{}) (map[string]interface{}, error)
-	PrepareRequest(jobs []*Job, originalJobs []*Job) []*Job
-	ShouldSendRequest(jobs []*Job) bool
-	WillSendRequest(jobs []*Job)
-	OnError(err error, jobs []*Job)
+	PrepareRequest(jobs Jobs, originalJobs Jobs) Jobs
+	ShouldSendRequest(jobs Jobs) bool
+	WillSendRequest(jobs Jobs)
+	OnError(err error, jobs Jobs)
 	OnSuccess(job *JobResult)
-	AfterResponse(results []*JobResult) []*JobResult
+	AfterResponse(results JobResults) JobResults
 }

@@ -17,7 +17,7 @@ var ErrEmptyResult = errors.New("server response missing results")
 type Renderer struct {
 	plugins     []Plugin
 	Url         string
-	incomingJob []*Job
+	incomingJob Jobs
 	Client      *http.Client
 }
 
@@ -25,7 +25,7 @@ func NewRenderer(url string) *Renderer {
 	return &Renderer{
 		plugins:     make([]Plugin, 0),
 		Url:         url,
-		incomingJob: make([]*Job, 0),
+		incomingJob: make(Jobs),
 		Client:      http.DefaultClient,
 	}
 }
@@ -35,7 +35,7 @@ func (r *Renderer) AddPlugin(plugin Plugin) {
 }
 
 func (r *Renderer) AddJob(id string, job *Job) {
-	r.incomingJob = append(r.incomingJob, job)
+	r.incomingJob[id] = job
 }
 
 func (r *Renderer) Render() *Response {
@@ -52,10 +52,10 @@ func (r *Renderer) Render() *Response {
 	}
 }
 
-func (r *Renderer) createJobs() (jobs []*Job) {
-	jobs = make([]*Job, 0)
+func (r *Renderer) createJobs() (jobs Jobs) {
+	jobs = make(Jobs)
 
-	for _, job := range r.incomingJob {
+	for name, job := range r.incomingJob {
 
 		createdJob := &Job{
 			Name:     job.Name,
@@ -71,13 +71,13 @@ func (r *Renderer) createJobs() (jobs []*Job) {
 			}
 		}
 
-		jobs = append(jobs, createdJob)
+		jobs[name] = createdJob
 	}
 
 	return
 }
 
-func (r *Renderer) prepareRequest(jobs []*Job) (shouldSend bool, preparedJobs []*Job) {
+func (r *Renderer) prepareRequest(jobs Jobs) (shouldSend bool, preparedJobs Jobs) {
 	preparedJobs = jobs
 	shouldSend = false
 
@@ -95,13 +95,13 @@ func (r *Renderer) prepareRequest(jobs []*Job) (shouldSend bool, preparedJobs []
 	return
 }
 
-func (r *Renderer) fallback(err error, jobs []*Job) (response *Response) {
+func (r *Renderer) fallback(err error, jobs Jobs) (response *Response) {
 	response = new(Response)
 
 	response.Err = err
-	response.Results = make([]*JobResult, 0)
+	response.Results = make(map[string]*JobResult, 0)
 
-	for _, job := range jobs {
+	for name, job := range jobs {
 		jobResult := new(JobResult)
 		id := uuid.NewV4()
 		jobResult.HTML = r.getFallbackHTML(job.Name, job.Data, id)
@@ -109,7 +109,7 @@ func (r *Renderer) fallback(err error, jobs []*Job) (response *Response) {
 			"uuid": id.String(),
 		}
 		jobResult.OriginalJob = job
-		response.Results = append(response.Results, jobResult)
+		response.Results[name] = jobResult
 	}
 
 	return
@@ -128,7 +128,7 @@ func (r *Renderer) getFallbackHTML(moduleName string, data map[string]interface{
 	)
 }
 
-func (r *Renderer) makeRequest(jobs []*Job) (*Response, error) {
+func (r *Renderer) makeRequest(jobs Jobs) (*Response, error) {
 	for _, plugin := range r.plugins {
 		plugin.WillSendRequest(jobs)
 	}
@@ -140,7 +140,7 @@ func (r *Renderer) makeRequest(jobs []*Job) (*Response, error) {
 	return r.finalize(results), nil
 }
 
-func (r *Renderer) doRequest(jobs []*Job) (results []*JobResult, err error) {
+func (r *Renderer) doRequest(jobs Jobs) (results JobResults, err error) {
 	content, err := json.Marshal(jobs)
 	if err != nil {
 		return
@@ -160,7 +160,7 @@ func (r *Renderer) doRequest(jobs []*Job) (results []*JobResult, err error) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var reply struct {
-		Result []struct {
+		Result map[string]struct {
 			HTML     string            `json:"html"`
 			Err      string            `json:"error,omitempty"`
 			Success  bool              `json:"success"`
@@ -184,7 +184,7 @@ func (r *Renderer) doRequest(jobs []*Job) (results []*JobResult, err error) {
 		}
 	}
 
-	results = []*JobResult{}
+	results = map[string]*JobResult{}
 	for key, result := range reply.Result {
 		var e error = nil
 		if result.Err != "" {
@@ -203,11 +203,11 @@ func (r *Renderer) doRequest(jobs []*Job) (results []*JobResult, err error) {
 	return
 }
 
-func (r *Renderer) finalize(results []*JobResult) *Response {
-	for _, result := range results {
+func (r *Renderer) finalize(results JobResults) *Response {
+	for name, result := range results {
 		if result.Err != nil {
 			for _, plugin := range r.plugins {
-				plugin.OnError(result.Err, []*Job{result.OriginalJob})
+				plugin.OnError(result.Err, Jobs{name: result.OriginalJob})
 			}
 		}
 	}
