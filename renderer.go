@@ -30,14 +30,17 @@ func NewRenderer(url string) *Renderer {
 	}
 }
 
+// Add a plugin
 func (r *Renderer) AddPlugin(plugin Plugin) {
 	r.plugins = append(r.plugins, plugin)
 }
 
+// Add a job
 func (r *Renderer) AddJob(id string, job *Job) {
 	r.incomingJob[id] = job
 }
 
+// Render Page Component
 func (r *Renderer) Render() *Response {
 	jobs := r.createJobs()
 	shouldSendRequest, jobs := r.prepareRequest(jobs)
