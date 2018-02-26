@@ -6,14 +6,18 @@ import (
 	"github.com/tonyhhyip/hypernova-go"
 )
 
-var _ hypernova.Plugin = &DevModePlugin{}
+var _ hypernova.Plugin = &DevModePlugin{PluginBase{}}
 
 type DevModePlugin struct {
 	PluginBase
 }
 
-func (p *DevModePlugin) AfterResponse(results []*hypernova.JobResult) []*hypernova.JobResult {
-	return results
+func (p *DevModePlugin) AfterResponse(results hypernova.JobResults) hypernova.JobResults {
+	postResult := make(hypernova.JobResults)
+	for name, results := range results {
+		postResult[name] = p.wrapErrors(results)
+	}
+	return postResult
 }
 
 func (p *DevModePlugin) wrapErrors(result *hypernova.JobResult) *hypernova.JobResult {

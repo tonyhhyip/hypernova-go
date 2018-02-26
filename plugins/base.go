@@ -10,20 +10,20 @@ func (*PluginBase) GetViewData(_ string, data map[string]interface{}) (map[strin
 	return data, nil
 }
 
-func (*PluginBase) PrepareRequest(jobs []*hypernova.Job, _ []*hypernova.Job) []*hypernova.Job {
+func (*PluginBase) PrepareRequest(jobs hypernova.Jobs, originalJobs hypernova.Jobs) hypernova.Jobs {
 	return jobs
 }
 
-func (*PluginBase) ShouldSendRequest(jobs []*hypernova.Job) bool {
+func (*PluginBase) ShouldSendRequest(jobs hypernova.Jobs) bool {
 	return true
 }
 
-func (*PluginBase) WillSendRequest(jobs []*hypernova.Job) {}
+func (*PluginBase) WillSendRequest(jobs hypernova.Jobs) {}
 
-func (*PluginBase) OnError(err error, jobs []*hypernova.Job) {}
+func (*PluginBase) OnError(err error, jobs hypernova.Jobs) {}
 
 func (*PluginBase) OnSuccess(job *hypernova.JobResult) {}
 
-func (*PluginBase) AfterResponse(results []*hypernova.JobResult) []*hypernova.JobResult {
+func (*PluginBase) AfterResponse(results hypernova.JobResults) hypernova.JobResults {
 	return results
 }
