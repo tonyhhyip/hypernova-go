@@ -17,9 +17,17 @@ var ErrEmptyResult = errors.New("server response missing results")
 type Renderer struct {
 	plugins     []Plugin
 	Url         string
-	config      map[string]interface{}
 	incomingJob []*Job
 	Client      *http.Client
+}
+
+func NewRenderer(url string) *Renderer {
+	return &Renderer{
+		plugins:     make([]Plugin, 0),
+		Url:         url,
+		incomingJob: make([]*Job, 0),
+		Client:      http.DefaultClient,
+	}
 }
 
 func (r *Renderer) AddPlugin(plugin Plugin) {
